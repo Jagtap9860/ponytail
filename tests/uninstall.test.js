@@ -84,6 +84,36 @@ assert.equal(
   'a combined statusLine must keep the non-ponytail command',
 );
 
+// A combined statusline joined with || (fallback) must also keep the other
+// plugin's part — the splitter handles &&, || and ; as separators.
+fs.writeFileSync(settingsPath, JSON.stringify({
+  statusLine: { type: 'command', command: 'bash ~/caveman-statusline.sh || bash /p/ponytail-statusline.sh' },
+}));
+
+result = runUninstall(env);
+assert.equal(result.status, 0, result.stderr);
+const settingsAfterFallback = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+assert.equal(
+  settingsAfterFallback.statusLine.command,
+  'bash ~/caveman-statusline.sh',
+  'a ||-combined statusLine must keep the non-ponytail command',
+);
+
+// A single pipe is one command, not a separator: `ponytail-statusline.sh | grep x`
+// must be removed whole, never leaving a `grep` husk behind.
+fs.writeFileSync(settingsPath, JSON.stringify({
+  statusLine: { type: 'command', command: 'bash /p/ponytail-statusline.sh | grep PONYTAIL' },
+}));
+
+result = runUninstall(env);
+assert.equal(result.status, 0, result.stderr);
+const settingsAfterPipe = JSON.parse(fs.readFileSync(settingsPath, 'utf8'));
+assert.equal(
+  settingsAfterPipe.statusLine,
+  undefined,
+  'a piped ponytail statusLine must be removed whole',
+);
+
 // #434: a malformed settings.json must not crash the script mid-cleanup. It
 // can't be safely edited, so uninstall warns and leaves the file byte-for-byte
 // intact instead of throwing a SyntaxError after other state was already removed.

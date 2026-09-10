@@ -489,4 +489,17 @@ try {
   if (prevEnvModeRev === undefined) delete process.env.PONYTAIL_DEFAULT_MODE; else process.env.PONYTAIL_DEFAULT_MODE = prevEnvModeRev;
 }
 
+// Unknown /ponytail arguments (typos like `/ponytail banana`) must not reset
+// the session mode: report the current level instead, like a bare /ponytail
+// (matches the OpenCode plugin, which ignores unknown args).
+const typoHome = path.join(temp, 'typo-home');
+fs.mkdirSync(path.join(typoHome, '.claude'), { recursive: true });
+const typoFlag = path.join(typoHome, '.claude', '.ponytail-active');
+fs.writeFileSync(typoFlag, 'ultra');
+const typoEnv = { HOME: typoHome, USERPROFILE: typoHome, PONYTAIL_DEFAULT_MODE: 'full' };
+result = run('ponytail-mode-tracker.js', typoEnv, JSON.stringify({ prompt: '/ponytail banana' }));
+assert.equal(result.status, 0, result.stderr);
+assert.equal(fs.readFileSync(typoFlag, 'utf8'), 'ultra', 'unknown arg must not reset the session mode');
+assert.match(result.stdout, /PONYTAIL MODE ACTIVE — level: ultra/);
+
 console.log('hook compatibility checks passed');

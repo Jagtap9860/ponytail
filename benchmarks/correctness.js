@@ -178,6 +178,14 @@ setTimeout(() => {
     const code = blocks.find((b) => b.lang === 'python' || b.lang === 'py' || (!b.lang && b.code.includes('csv') && b.code.includes('sum')));
     if (!code) return { pass: false, reason: 'No Python code block found' };
 
+    // Missing test dependency, not a wrong answer: if the generated code needs
+    // pandas and this machine doesn't have it, say so plainly instead of a bare
+    // FAIL with an empty output. (CI installs pandas; fresh local clones often
+    // don't — see .github/workflows/test.yml.)
+    if (/import\s+pandas|from\s+pandas/.test(code.code) && !exec(`${python()} -c "import pandas"`).ok) {
+      return { pass: false, reason: 'pandas is not installed in this Python, so the pandas answer could not be executed. Fix: run `pip install pandas`, then re-run the tests. (Not a wrong answer — a missing test dependency.)' };
+    }
+
     // Create a test CSV and wrap the generated code so it reads it.
     const csvContent = 'name,amount\nAlice,100.5\nBob,200.0\nCharlie,50.5\n';
     const csvPath = tmpFile('.csv', csvContent).replace(/\\/g, '/');

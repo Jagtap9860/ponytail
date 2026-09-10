@@ -30,11 +30,12 @@ try {
   const cmd = settings.statusLine && settings.statusLine.command;
   // Only remove the parts ponytail owns. If the user combined statuslines
   // (e.g. caveman && ponytail), keep the other plugin's command intact.
-  // ponytail: splits on && / ; to detect other segments — good enough; a user
-  // piping statuslines together is on their own.
+  // Splits on statement separators (&& / || / ;) to detect other segments.
+  // A single pipe is deliberately NOT a separator: `cmd | grep x` is one
+  // command, and splitting it would leave a `grep` husk behind.
   if (typeof cmd === 'string' && cmd.includes(STATUSLINE_SCRIPT)) {
     const parts = cmd
-      .split(/&&|;/)
+      .split(/&&|\|\||;/)
       .map((s) => s.trim())
       .filter(Boolean);
     const others = parts.filter((s) => !s.includes(STATUSLINE_SCRIPT));

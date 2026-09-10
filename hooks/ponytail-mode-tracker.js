@@ -51,7 +51,12 @@ function finish() {
           isReportOnly = true;
           mode = readMode() || getDefaultMode();
         } else {
-          mode = getDefaultMode();
+          // Unknown argument (a typo like `/ponytail banana`): never reset the
+          // session mode. Report the current level instead, exactly like a bare
+          // /ponytail — this matches the OpenCode plugin, which ignores unknown
+          // args and leaves the flag untouched.
+          isReportOnly = true;
+          mode = readMode() || getDefaultMode();
         }
       }
 
